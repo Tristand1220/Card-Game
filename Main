@@ -27,7 +27,7 @@ import java.io.IOException;
 public class Main extends Application {
 
     private Deck deck = new Deck();
-    private Hand player1,player2;
+    private Player player1,player2;
     private Text message = new Text();
 
     private SimpleBooleanProperty play = new SimpleBooleanProperty(false);
@@ -39,8 +39,8 @@ public class Main extends Application {
     int p2points; //Points for player 2
 
     private Parent create(){
-        player1 = new Hand(player1Cards.getChildren());
-        player2 = new Hand(player2Cards.getChildren());
+        player1 = new Palyer(player1Cards.getChildren());
+        player2 = new Palyer(player2Cards.getChildren());
 
         Pane root = new Pane();
         root.setPrefSize(800, 600);
