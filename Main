@@ -39,8 +39,8 @@ public class Main extends Application {
     int p2points; //Points for player 2
 
     private Parent create(){
-        player1 = new Palyer(player1Cards.getChildren());
-        player2 = new Palyer(player2Cards.getChildren());
+        player1 = new Player(player1Cards.getChildren());
+        player2 = new Player(player2Cards.getChildren());
 
         Pane root = new Pane();
         root.setPrefSize(800, 600);
@@ -82,9 +82,10 @@ public class Main extends Application {
 
 
         Button btnPlay = new Button("PLAY");
+        Button btnHit = new Button("NEXT");
 
 
-        HBox buttonsHBox = new HBox(15, btnPlay);
+        HBox buttonsHBox = new HBox(15, btnPlay, btnHit);
         buttonsHBox.setAlignment(Pos.CENTER);
 
         rightVBox.getChildren().addAll(btnPlay, pointsp1,pointsp2, buttonsHBox);
@@ -103,17 +104,31 @@ public class Main extends Application {
         player1Score.textProperty().bind(new SimpleStringProperty("Player 1: ").concat(player2.valueProperty().asString()));
 
         player1.valueProperty().addListener((obs, old, newValue) -> {
-            if (newValue.intValue() > player2.vauleProperty) {
+            if (newValue.intValue() > player2.valueProperty) {
                 p1points++;
             }
-        }
+        });
 
 
         player2.valueProperty().addListener((obs, old, newValue) -> {
-                    if (newValue.intValue() > player1.vauleProperty) {
+                    if (newValue.intValue() > player1.valueProperty) {
                         p2points++;
                     }
+        });
+
+        if (player1.valuProperty = player2.valueProperty){
+            player1.takeCard(deck.drawCard());
+            player1.takeCard(deck.drawCard());
+            player1.takeCard(deck.drawCard());
+            player1.takeCard(deck.drawCard());
+
+            player2.takeCard(deck.drawCard());
+            player2.takeCard(deck.drawCard());
+            player2.takeCard(deck.drawCard());
+            player2.takeCard(deck.drawCard());
+
         }
+
 
 
 
@@ -154,13 +169,13 @@ public class Main extends Application {
 
         int player1Value = player1.valueProperty().get();
         int player2Value = player2.valueProperty().get();
-        String winner = "Exceptional case: d: " + player1Value + " p: " + player2Value;
+        String winner = "";
 
 
         if (player1Value > player2Value) {        //Checks which player wins based on vaule
             winner = "Player 1";
         }
-        else if (player2Value > player1Value) {
+        else{
             winner = "Player 2";
         }
 
