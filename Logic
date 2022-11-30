@@ -1,0 +1,122 @@
+package com.example.card;
+
+import java.util.ArrayList;
+
+public class Logic {
+    //Method to determine which player won the game
+    public static String winner(ArrayList<Cards> player_1_hand, ArrayList<Cards> player_2_hand) {
+        //calling the method hand_total to produce the sum of each players' hand
+        int player_1_sum = hand_total(player_1_hand);
+        int player_2_sum = hand_total(player_2_hand);
+
+        //if player 1 hand's sum is more than player 2's hand, player 1 wins!
+        if (player_1_sum > player_2_sum) {
+            return "Player 1";
+        }
+        //if player 2 hand's sum is more than player 1's hand, player 2 wins!
+        else if (player_2_sum > player_1_sum) {
+            return "Player 2";
+        }
+        //if player 1 and player 2's hands have the same sum, then it's a draw!
+        else  {
+            return "Draw";
+        }
+    }
+
+    //Checks if players hands are natural
+    public static String hand_is_natural(ArrayList<Cards> player_1_hand, ArrayList<Cards> player_2_hand) {
+        //Again (AS LINE 8) calling the method hand_total to produce the sum of each players' hand
+        int player_1_sum = hand_total(player_1_hand);
+        int player_2_sum = hand_total(player_2_hand);
+
+        //Checking if each player has 2 cards
+        if (player_1_hand.size() == 2 && player_2_hand.size() == 2) {
+            //If each player's hand has a sum of 8, it is a natural draw.
+            if (player_1_sum == 8 && player_2_sum == 8) {
+                return "Draw";
+            }
+            //If each player's hand has a sum of 9, it is a natural draw.
+            if (player_1_sum == 9 && player_2_sum == 9) {
+                return "Draw";
+            }
+            //If player 1's hand sum is 9, and player 2's hand is not, then player 1 wins!
+            if (player_1_sum == 9) {
+                return "Player 1";
+            }
+            //If player 2's hand sum is 9, and player 1's hand is not, then player 2 wins!
+            if (player_2_sum == 9) {
+                return "Player 2";
+            }
+            //If player 1's hand sum is 8, and player 2's hand is less than that, then player 1 wins!
+            if (player_1_sum == 8) {
+                return "Player 1";
+            }
+            //If player 2's hand sum is 8, and player 1's hand is less than that, then player 2 wins!
+            if (player_2_sum == 8) {
+                return "Player 2";
+            }
+        }
+        //if none of the above conditions are met, it means that the 2 players' hands are not natural(does not have 2 cards each)
+        return "Not natural";
+    }
+
+    //calculate the sum in each player's hand: method
+    public static int hand_total(ArrayList<Cards> hand){
+        //hand initialization
+        int hand_total = 0;
+
+        //for loop to loop through the hand and calculate
+        for (int index = 0; index < hand.size(); index++){
+            hand_total = hand_total + hand.get(index).get_card_value();
+        }
+        //Hand total needs to be mod 10 so that it does not exceed 10. MIGHT CHANGE
+        hand_total = hand_total % 10;
+        return hand_total;
+    }
+
+    //MIGHT BE CHANGE TO THE SAME THING IN LINE 117!!
+    //Evaluate if player 2 draws a third card.
+    static boolean player_2_draws(ArrayList<Cards> player_2_hand, Cards player_1_card){
+        //truth table to determine if a third card should be drawn
+        boolean[][] truth_table = new boolean[][]{
+                /* 0  	  1  	 2    	3  	   4  	  5  	 6  	7  	   8  	  9	*/
+                { true,  true,  true,  true,  true,  true,  true,  true,  true,  true }, //0
+                { true,  true,  true,  true,  true,  true,  true,  true,  true,  true }, //1
+                { true,  true,  true,  true,  true,  true,  true,  true,  true,  true }, //2
+                { true,  true,  true,  true,  true,  true,  true,  true,  true,  true }, //3
+                { false, false, true,  true,  true,  true,  true,  true,  false, false}, //4
+                { false, false, false, false, true,  true,  true,  true,  false, false}, //5
+                { false, false, false, false, false, false, true,  true,  false, false}, //6
+                { false, false, false, false, false, false, false, false, false, false}, //7
+                { false, false, false, false, false, false, false, false, false, false}, //8
+                { false, false, false, false, false, false, false, false, false, false}, //9
+        };
+
+        //player 2's hand sum
+        int player_2_hand_sum = hand_total(player_2_hand);
+
+        //If player 1's third card is null
+        if (player_1_card == null){
+            //if player 2's hand sum is less than 6, then a third card is drawn
+            return player_2_hand_sum < 6;
+        }
+
+        //Determining from truth table if a third card is drawn for player 2
+        return truth_table[player_2_hand_sum][player_1_card.get_card_value()];
+        //if none of these conditions is met
+    }
+
+    //Determine if player 1 draws a third card: method
+    static boolean player_1_draws(ArrayList<Cards> hand){
+
+        //player 1's hand sum
+        int player_1_hand_sum = hand_total(hand);
+
+        //If player 1 has 2 cards, AND the sum of hand is less than 6, players 1 draws a third card
+        if(hand.size() == 2){
+            return player_1_hand_sum < 6;//CHECK LOGIC
+        }
+        //If none of the conditions are met
+        return false;
+    }
+}
