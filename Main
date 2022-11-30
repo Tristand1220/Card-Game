@@ -1,200 +1,533 @@
-package com.example.fx;
+package com.example.card;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.PauseTransition;
+import javafx.animation.Timeline;
 import javafx.application.Application;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleStringProperty;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Parent;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Text;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Group;
 import javafx.scene.Scene;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
-import javafx.stage.Stage;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
+import javafx.util.Duration;
 
-import java.io.IOException;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+
 
 public class Main extends Application {
 
-    private Deck deck = new Deck();
-    private Player player1,player2;
-    private Text message = new Text();
+    Text bet_confirm_text_box, result;
+    TextField input_bet;
+    Button b;
+    PauseTransition pause = new PauseTransition(Duration.seconds(1));
+    HashMap<String, Scene> sceneMap;
+    GridPane grid;
+    EventHandler<ActionEvent> deal_button, set_bet, to_game, reset, exit;
+    Timeline cards_dealt, player, players_one_two, banker, endRound;
+    String userinput;
+    private static DecimalFormat format = new DecimalFormat("#.##");
 
-    private SimpleBooleanProperty play = new SimpleBooleanProperty(false);
+    int playerCurrentTotal = 0;
+    int bankerCurrentTotal = 0;
 
-    private HBox player1Cards = new HBox(20);
-    private HBox player2Cards = new HBox(20);
-
-    int p1points; //Points for player 1
-    int p2points; //Points for player 2
-
-    private Parent create(){
-        player1 = new Player(player1Cards.getChildren());
-        player2 = new Player(player2Cards.getChildren());
-
-        Pane root = new Pane();
-        root.setPrefSize(800, 600);
-
-        Region background = new Region();                                    //Sets Background for the game
-        background.setPrefSize(800, 600);
-        background.setStyle("-fx-background-color: rgba(164, 81, 169, 1)");
-
-        HBox rootLayout = new HBox(5);                                    //Left display side of Game
-        rootLayout.setPadding(new Insets(5, 5, 5, 5));
-        Rectangle left = new Rectangle(550, 560);
-        left.setArcWidth(50);
-        left.setArcHeight(50);
-        left.setFill(Color.TEAL);
-
-        Rectangle right = new Rectangle(230, 560);                     //Right display side of Game
-        right.setArcWidth(50);
-        right.setArcHeight(50);
-        right.setFill(Color.DARKRED);
+    public static ArrayList<Cards> playerHand;
+    public static ArrayList<Cards> bankerHand;
+    public static Deck theDealer;
+    static double currentBet;
+    static double totalWinnings;
+    static String betOn___;
 
 
-        // LEFT
-        VBox leftVBox = new VBox(50);
-        leftVBox.setAlignment(Pos.TOP_CENTER);
+    public static void initialize(){
 
-        Text player1Score = new Text("Player 1: ");
-        Text player2Score = new Text("Player 2: ");
+        currentBet = 0;
+        totalWinnings = 0;
+        playerHand = new ArrayList<Cards>(3);
+        bankerHand = new ArrayList<Cards>(3);
+        theDealer = new Deck();
+        betOn___ = "";
+    }
 
-        leftVBox.getChildren().addAll(player1Score, player1Cards, message, player2Cards, player2Score);
+    //Method to handle whether a 3rd card should be dealt to the player and banker.
+    static void thirdCardHandler(ArrayList<Cards> playerHand1, ArrayList<Cards> bankerHand1){
+        //Set third card to null for both banker and player.
+        Cards playerThirdCard = null;
+        Cards bankerThirdCard = null;
+        //First check if there is a natural winning/drawing hand.
+        String nat = Logic.hand_is_natural(playerHand, bankerHand);
+        //If there is a natural, then exit function.
+        if(nat == "Player 1" || nat == "Player 2")
+        {
+            return;
+        }
+        //Otherwise check if the player needs a third card.
+        if(Logic.player_1_draws(playerHand)){
+            playerThirdCard = theDealer.draw_one_card();
+            playerHand.add(playerThirdCard); //add third card if needed
+        }
+        //Check if the banker needs a third card which is dependent on the player's third card
+        if(Logic.player_2_draws(bankerHand1, playerThirdCard)){
+            bankerThirdCard = theDealer.draw_one_card();
+            bankerHand.add(bankerThirdCard); //Add a third card to the banker's hand.
+        }
+    }
 
-        // RIGHT
-
-        VBox rightVBox = new VBox(20);
-        rightVBox.setAlignment(Pos.CENTER);
-
-
-        Text pointsp1 = new Text("Points: "); //Display points for player 1
-        Text pointsp2 = new Text("Points: "); //Display points for player 2
-
-
-        Button btnPlay = new Button("PLAY");
-        Button btnHit = new Button("NEXT");
-
-
-        HBox buttonsHBox = new HBox(15, btnPlay, btnHit);
-        buttonsHBox.setAlignment(Pos.CENTER);
-
-        rightVBox.getChildren().addAll(btnPlay, pointsp1,pointsp2, buttonsHBox);
-
-        // ADD BOTH STACKS TO ROOT LAYOUT
-
-        rootLayout.getChildren().addAll(new StackPane(left, leftVBox), new StackPane(right, rightVBox));
-        root.getChildren().addAll(background, rootLayout);
-
-        // BIND PROPERTIES
-
-        btnPlay.disableProperty().bind(play.not());
-
-
-        player2Score.textProperty().bind(new SimpleStringProperty("Player 2: ").concat(player1.valueProperty().asString()));
-        player1Score.textProperty().bind(new SimpleStringProperty("Player 1: ").concat(player2.valueProperty().asString()));
-
-        player1.valueProperty().addListener((obs, old, newValue) -> {
-            if (newValue.intValue() > player2.valueProperty) {
-                p1points++;
+    //Method to evaulate the betting outputs for the player.
+    public double evaluateWinnings(){
+        //Determine which hand is the winning hand.
+        String winner = Logic.winner(playerHand, bankerHand);
+        //Check if the player's better is the winning bet
+        if(betOn___ == winner){
+            //If the player won betting on the player's hand, then return the winnings.
+            if (winner == "Player"){
+                totalWinnings = totalWinnings + currentBet;
+                return currentBet;
             }
-        });
-
-
-        player2.valueProperty().addListener((obs, old, newValue) -> {
-                    if (newValue.intValue() > player1.valueProperty) {
-                        p2points++;
-                    }
-        });
-
-        if (player1.valuProperty = player2.valueProperty){
-            player1.takeCard(deck.drawCard());
-            player1.takeCard(deck.drawCard());
-            player1.takeCard(deck.drawCard());
-            player1.takeCard(deck.drawCard());
-
-            player2.takeCard(deck.drawCard());
-            player2.takeCard(deck.drawCard());
-            player2.takeCard(deck.drawCard());
-            player2.takeCard(deck.drawCard());
-
+            //If the player won betting on the banker's hand, then return the winnings.
+            if(winner == "Banker"){
+                totalWinnings = totalWinnings + (.95) * currentBet;
+                return currentBet*(.95);
+            }
+            //If the player won betting on a draw, then return the winnings
+            if(winner == "Draw"){
+                totalWinnings = totalWinnings - currentBet + 8.0 * currentBet;
+                return  8.0 * currentBet;
+            }
         }
-
-
-
-
-
-        // INIT BUTTONS
-
-        btnPlay.setOnAction(event -> {            //Hitting "play" button starts new game with newly drawn cards
-            startNewGame();
-        });
-
-        btnHit.setOnAction(event -> {
-            player1.takeCard(deck.drawCard());
-            player2.takeCard(deck.drawCard());
-        });
-
-
-
-        return root;
+        //Otherwises, if player loses a bet, then return the losings.
+        totalWinnings = totalWinnings - currentBet;
+        return (-1*currentBet);
     }
 
+    public static void main(String[] args) {
 
-    private void startNewGame() {
-        play.set(true);
-        message.setText("");
-
-        deck.refill();
-
-        player1.reset();
-        player2.reset();
-
-        player1.takeCard(deck.drawCard());    //Each player gets one card
-        player2.takeCard(deck.drawCard());
-
-    }
-
-    private void endGame() {
-        play.set(false);
-
-        int player1Value = player1.valueProperty().get();
-        int player2Value = player2.valueProperty().get();
-        String winner = "";
-
-
-        if (player1Value > player2Value) {        //Checks which player wins based on vaule
-            winner = "Player 1";
-        }
-        else{
-            winner = "Player 2";
-        }
-
-        message.setText(winner + " WON");
-    }
-
-
+        initialize();   //Initializes the variables that are in the backend of this program
+        // TODO Auto-generated method stub
+        launch(args);  //launch
+    }//end of main
 
     @Override
-            public void start(Stage primaryStage) throws Exception {
-                primaryStage.setScene(new Scene(create()));
-                primaryStage.setWidth(800);
-                primaryStage.setHeight(600);
-                primaryStage.setResizable(false);
-                primaryStage.setTitle("Trojan War");
-                primaryStage.show();
-            }
+    public void start(Stage primaryStage) throws Exception {
+        // TODO Auto-generated method stub
+        sceneMap = new HashMap<String,Scene>();  //create a scene map to store different scenes
+        input_bet = new TextField();
+        bet_confirm_text_box = new Text();
+        result = new Text();
 
-            public static void main(String[] args) {
-                launch(args);
+        result.setStyle("-fx-font-size: 22;" + "-fx-fill: WHITE");
+        bet_confirm_text_box.setFill(Color.WHITE);
+
+        timeLineArea(primaryStage);             //set all the TimeLines
+        eventHandlerArea(primaryStage);         //set all the eventHandler
+
+        sceneMap.put("homeScreen", createHomeScreen()); //create scene for the home screen
+
+        primaryStage.setTitle("Trojan War");      //set Title
+        primaryStage.setScene(sceneMap.get("homeScreen"));
+        primaryStage.sizeToScene();                       //set Scene to size
+        primaryStage.setResizable(false);                 //Do not allow user to resize window
+        primaryStage.show();                              //Present
+    }//end of start
+
+    //public void timeLineArea is a function that has the parameter of Stage
+    //This function holds all of the setting code for any timeline used in this
+    //program.
+
+    public void timeLineArea(Stage primaryStage) {
+        //Timeline for when the round has ended
+        endRound = new Timeline(
+                //Frame will cause the message of who had won, reset betOn, and set a new scene
+                new KeyFrame(Duration.seconds(1), new EventHandler<ActionEvent>() {
+                    @Override
+                    public void handle(ActionEvent event) {
+                        result.setText(Logic.winner(playerHand, bankerHand) + " Has Won this Hand");
+                        bet_confirm_text_box.setText("You Had Your Bet On " + b.getText());
+                        betOn___ = "";
+                        primaryStage.setScene(sceneMap.get("endRound"));
+                    }
+
+                }
+                )
+        );
+        //Timeline when there is only a third player card
+        player = new Timeline(
+                new KeyFrame(Duration.seconds(1), new EventHandler<ActionEvent>() {
+                    public void handle(ActionEvent t) {
+                        primaryStage.setScene(sceneMap.get("playerCard3"));
+                        endRound.play(); //end the round
+                    }
+                }
+                ));
+        //Timeline when there is a third player and banker card
+        players_one_two = new Timeline(
+                new KeyFrame(Duration.seconds(1), e->primaryStage.setScene(sceneMap.get("playerCard3"))),
+                new KeyFrame(Duration.seconds(2), new EventHandler<ActionEvent>() {
+                    public void handle(ActionEvent t) {
+                        primaryStage.setScene(sceneMap.get("bankerCard3"));
+                        endRound.play(); //end the round
+                    }
+                }
+                ));
+        //Timeline when there is only a third banker card
+        banker = new Timeline(
+                new KeyFrame(Duration.seconds(1), new EventHandler<ActionEvent>() {
+                    public void handle(ActionEvent t) {
+                        primaryStage.setScene(sceneMap.get("bankerCard3"));
+                        endRound.play(); //end the round
+                    }
+                }
+                ));
+        //TimeLine that will deal the first four cards at 1 second at a time, and will determine what cards will
+        //proceed
+        cards_dealt = new Timeline(
+                //
+                new KeyFrame(Duration.ZERO, e-> primaryStage.setScene(sceneMap.get("gameScene"))),
+                new KeyFrame(Duration.seconds(1), e -> primaryStage.setScene(sceneMap.get("playerCard1"))),
+                new KeyFrame(Duration.seconds(2), e -> primaryStage.setScene(sceneMap.get("bankerCard1"))),
+                new KeyFrame(Duration.seconds(3), e -> primaryStage.setScene(sceneMap.get("playerCard2"))),
+                new KeyFrame(Duration.seconds(4), new EventHandler<ActionEvent>() {
+                    public void handle(ActionEvent t) {
+                        primaryStage.setScene(sceneMap.get("bankerCard2"));
+                        if(2 < playerHand.size() ) {                              //if the player has a third card
+                            if(2 < bankerHand.size()) {                           //also the banker
+                                players_one_two.play();
+                            }
+                            else{                                                 //banker does not
+                                player.play();
+                            }
+                        }
+                        else if(2 < bankerHand.size() ) {                         //only the banker has a third card
+                            banker.play();
+                        }
+                        else{
+                            endRound.play(); //end the round
+                        }
+                    }
+                }
+                )
+        );
+    }//end of timeLineArea()
+
+    //public void eventHandlerArea is a function that has the parameter of Stage
+    //This function holds all of the setting code for any eventHandlers used in this
+    //program.
+
+    public void eventHandlerArea(Stage primaryStage) {
+
+        //This event will deal the cards
+        deal_button = new EventHandler<ActionEvent>(){
+            public void handle(ActionEvent event){
+                result.setText("");                                               //reset result
+                if(betOn___ == "") {                                              //check of there was a bet
+                    bet_confirm_text_box.setText("Please Select A Betting Opition");
+                    return;
+                }
+                playerCurrentTotal = 0;                                           //reset the totals
+                bankerCurrentTotal = 0;
+                playerHand = theDealer.deal_hand();                                //get the new hands
+                bankerHand = theDealer.deal_hand();
+                thirdCardHandler(playerHand, bankerHand);                         //check/deal if a third card is needed for either
+                sceneMapSetup();                                                  //setup the scenes
+                cards_dealt.play();                                                //Play the timeline to display the cards
+                evaluateWinnings();                                               //check/give who won
+                sceneMap.put("endRound", endRound());                             //set the final scene
             }
+        };
+        //This event will get the betting amount and whom to bet upon from the user
+        set_bet = new EventHandler<ActionEvent>(){
+            public void handle(ActionEvent event){
+                userinput = input_bet.getText();                                                //grab data from the textfield
+                b = (Button)event.getSource();                                                     //get the button name
+                if (userinput != null && userinput.matches("[0-9]+") && userinput.length() > 0 && Integer.parseInt(userinput) != 0) {  //check if it is a number
+                    currentBet = Integer.parseInt(userinput);                                      //set current bet with userinput
+                    betOn___ = b.getText();                                                        //set betOn
+                    bet_confirm_text_box.setText("Bet Placed On " + b.getText() + ".  Good Luck!");   //print confrimation
+                }
+                else {
+                    bet_confirm_text_box.setText("Enter A Number, Then Select Who");                  //if any error
+                    return;
+                }
+            }
+        };
+        //This event will take you from the Homescreen to the gameScreen
+        to_game = new EventHandler<ActionEvent>(){
+            public void handle(ActionEvent event){
+                sceneMap.put("gameScene", createCardScene(0,false,false));
+                primaryStage.setScene(sceneMap.get("gameScene"));
+            }
+        };
+        //This event will reset the game
+        reset = new EventHandler<ActionEvent>(){
+            public void handle(ActionEvent event) {
+                cards_dealt.stop();                                         //if dealing cards, stop
+                result.setText("");                                        //reset all text box's, variables and fields
+                userinput = "";
+                totalWinnings = 0;
+                betOn___ = "";
+                bet_confirm_text_box.setText("");
+                playerCurrentTotal = 0;
+                bankerCurrentTotal = 0;
+                input_bet.clear();
+                sceneMap.put("gameScene", createCardScene(0,false,false));//set stock game screen
+                primaryStage.setScene(sceneMap.get("gameScene"));         //go to stock game screen
+            }
+        };
+        //This event will exit the game
+        exit = new EventHandler<ActionEvent>(){
+            public void handle(ActionEvent event){
+                primaryStage.close();
+            }
+        };
+
+    }//end of eventHandlerArea()
+
+    //endRound function job is to create the final screen with everything updated
+    protected Scene endRound() {
+        if(sceneMap.get("bankerCard3") != null)
+            return createCardScene(4,true,true);
+        else if(sceneMap.get("playerCard3") != null)
+            return createCardScene(4,true,false);
+        else
+            return createCardScene(4,false,false);
+    }//end of endRound()
+    /*------------------------------------------------------------*/
+    // public createHomeScreen does not have any parameters, but has a return type of Scene. This function will
+    // create the scene for the home screen
+    private Scene createHomeScreen() {
+        Button btnToGame = new Button();    //button to the game screen
+        BorderPane home = new BorderPane(); //borderPane for layout
+        btnToGame.setPrefSize(416, 50);     //Button size to fit
+        btnToGame.setOnAction(to_game);      //set its action
+        btnToGame.setStyle("-fx-background-image: url(\"/0.png\");" + "-fx-focus-color: transparent;" + "-fx-border-color: transparent" );
+        HBox hbox = new HBox(btnToGame);    //insert the button into an hbox
+        hbox.setPadding(new Insets(30,0,30,25));
+        home.setStyle("-fx-background-image: url(\"/homeScreen.png\");-fx-background-size: 960, 600;-fx-background-repeat: no-repeat;");
+        home.setPrefSize(960, 540);
+        home.setBottom(hbox);               //set the bottom of the borderpane to the hbox
+        Scene scene = new Scene(home);      //create a scene
+        return scene;                       //return the scene
+    }//end of createHomeScreen()
+
+
+    // public void sceneMapSetup take in no parameters. This function will set up all the scenes throughout the game
+    // after the action of deal cards is called. All of the scenes are inserted to the sceneMap
+    private void sceneMapSetup() {
+        sceneMap.put("playerCard3", null); //reset 3rd cards, personal check
+        sceneMap.put("bankerCard3", null);
+
+        sceneMap.put("gameScene", createCardScene(0,false,false));                     //player card 1
+        playerCurrentTotal = playerHand.get(0).get_card_value() + playerCurrentTotal;
+        sceneMap.put("playerCard1", createCardScene(1,false,false));				   //banker card 1
+        bankerCurrentTotal = bankerHand.get(0).get_card_value() + bankerCurrentTotal;
+        sceneMap.put("bankerCard1", createCardScene(2,false,false));			       //player card 2
+        playerCurrentTotal = playerHand.get(1).get_card_value() + playerCurrentTotal;
+        sceneMap.put("playerCard2", createCardScene(3,false,false));				   //banker card 2
+        bankerCurrentTotal = bankerHand.get(1).get_card_value() + bankerCurrentTotal;
+        sceneMap.put("bankerCard2", createCardScene(4,false,false));
+        if(2 < playerHand.size() ) {
+            playerCurrentTotal = playerHand.get(2).get_card_value() + playerCurrentTotal;
+            sceneMap.put("playerCard3", createCardScene(4,true,false));                 //player card 3
+        }
+        if(2 < bankerHand.size()) {
+            bankerCurrentTotal = bankerHand.get(2).get_card_value() + bankerCurrentTotal;
+            sceneMap.put("bankerCard3", createCardScene(4,true,true));                  //banker card 3
+        }
+    }//end of sceneMapSetup()
+
+
+    // public createCardScene takes in 3 different parameters of int, and two booleans. The int will tell how far to
+    //build the first four card, and the booleans will determine the third card of both
+    public Scene createCardScene(int firstFour, boolean playerThird, boolean bankerThird) {
+        BorderPane border = stockLayout();                               //create a stock layout
+        GridPane GridBox = gridAdder(firstFour,playerThird,bankerThird); //create a girdPane, but pass the variables
+        border.setCenter(GridBox);                                       //set GridBox in the center
+        Scene scene = new Scene(border);								 //new scene
+        return scene;                                                    //return scene
+    }//end of createCardScene()
+
+
+    //gridAdder is a private function that takes in three parameters, one in and two boolean. The int will tell how far to
+    //build the first four card, and the booleans will determine the third card of both
+    private GridPane gridAdder(int four, boolean playerThird, boolean bankerThird) {
+        GridPane GridBox = createGridBox();
+
+        if(four > 0) {
+            ImageView PlayerCard1 =  imageSet(playerHand.get(0).get_image_file_name()); //create player card 1 picture and set it to the grid
+            GridBox.add(PlayerCard1, 0, 0, 1, 1);
+        }
+        if(four > 1) {
+            ImageView BankerCard1 =  imageSet(bankerHand.get(0).get_image_file_name()); //create banker card 1 picture and set it to the grid
+            GridBox.add(BankerCard1, 0, 1, 1, 1);
+        }
+        if(four > 2) {
+            ImageView PlayerCard2 =  imageSet(playerHand.get(1).get_image_file_name()); //create player card 2 picture and set it to the grid
+            GridBox.add(PlayerCard2, 1, 0, 1, 1);
+        }
+        if(four > 3) {
+            ImageView BankerCard2 =  imageSet(bankerHand.get(1).get_image_file_name()); //create banker card 2 picture and set it to the grid
+            GridBox.add(BankerCard2, 1, 1, 1, 1);
+        }
+        if(playerThird == true && 2 < playerHand.size()) {
+            ImageView PlayerCard3 =  imageSet(playerHand.get(2).get_image_file_name()); //create player card 3 picture and set it to the grid
+            GridBox.add(PlayerCard3, 2, 0, 1, 1);
+        }
+        if(bankerThird == true && 2 < bankerHand.size()) {
+            ImageView BankerCard3 =  imageSet(bankerHand.get(2).get_image_file_name()); //create banker card 3 picture and set it to the grid
+            GridBox.add(BankerCard3, 2, 1, 1, 1);
+        }
+        GridBox.add(result,0,2,30,10);                                               //set result text
+        return GridBox; //return GridBox
+    }//end of gridAdder()
+
+
+    //imageSet is a public function that will take in a a string with a file name and will return it of type
+    //ImageView.
+    private ImageView imageSet(String file) {
+        ImageView card = new ImageView(new Image(file)); //create ImageView of picture
+        card.setFitWidth(115);                           //set width and height
+        card.setFitHeight(176);
+        return card;                                     //return the card
+    }//end of imageSet()
+
+    //stockLayout is a public function that will return a borderPane. This function will create a template of the GUI
+    //that will be used throughout the game
+    /*------------------------------------------------------------*/
+    private BorderPane stockLayout() {
+        BorderPane border = createBaseBorderPane(); //create the borderpane
+
+        VBox topVbox = createVBoxtop();             //create the topVbox
+        HBox bottomHbox = createHboxBottom();       //create the bottomHbox
+        VBox leftVerticalBox = createVBoxLeft();    //create the leftVerticalBox
+        VBox rightVerticalBox = createVboxRight();  //create the rightVerticalBox
+
+        border.setTop(topVbox);           //set top with topVbox
+        border.setBottom(bottomHbox);     //set bottom with bottomHbox
+        border.setLeft(leftVerticalBox);  //set left with leftVerticalBox
+        border.setRight(rightVerticalBox);//set right with rightVerticalBox
+
+        return border;//return border (template)
+    }//end of stockLayout()
+
+    //createBaseBorderPane is a public function that will create/return a generic game screen BorderPane
+
+    private BorderPane createBaseBorderPane() {
+        BorderPane border = new BorderPane(); //create a new BorderPane
+        border.setStyle("-fx-background-image: url(\"/green_felt.jpg\");-fx-background-size: 960, 600;-fx-background-repeat: no-repeat;");
+        border.setPrefSize(960, 600);         //set it's size
+        return border;//return it
+    }//end of createBaseBorderPane()
+
+    //createVBoxtop is a private function that will create/return a generic game screen VBox for the top
+
+    private VBox createVBoxtop() {
+        VBox top = new VBox(); //create a new VBox
+        top.getChildren().addAll(MenuCreate(),playerWinnings()); //call MenuCreate and playerWinnings and add them to top
+        return top;  //return VBox
+    }//end of createVBoxtop()
+
+    //MenuCreate is a private function that will create/return a generic Hbox to hold the menu bar
+
+    private HBox MenuCreate() {
+        HBox hbox = new HBox();                     //create a new Hbox
+        MenuBar menuBar = new MenuBar();            //create a menu bar
+        Menu menuOne = new Menu("Options");         //create a menu
+        MenuItem one = new MenuItem("Fresh Start"); //create a menu item's
+        MenuItem two = new MenuItem("Exit");
+        one.setOnAction(reset);                     //set there actions
+        two.setOnAction(exit);
+        menuOne.getItems().addAll(one,two);         //add menu
+        menuBar.getMenus().addAll(menuOne);
+        hbox.getChildren().addAll(menuBar);
+        return hbox; //return HBox
+    }//end of MenuCreate()
+
+    //playerWinnings is a private function that will create/return a generic Hbox to hold the players winning textbox
+
+    private HBox playerWinnings() {
+        HBox hbox = new HBox();        //create a new HBox
+        Text playerCount = new Text(); //create a new textbox
+        playerCount.setStyle("-fx-font-size: 22;" + "-fx-fill: AZURE");
+        playerCount.setText("Players Current Winnings: $" + format.format(totalWinnings));
+        hbox.getChildren().add(playerCount);    //add the textbox to the HBox
+        hbox.setPadding(new Insets(0,0,20,0));  //add some padding
+        hbox.setAlignment(Pos.CENTER);			//center it
+        return hbox;							//return the HBox
+    }//end of playerWinnings()
+
+    //createHboxBottom is a private function that will create/return a generic HBox for the bottom
+
+    private HBox createHboxBottom() {
+        HBox hbox = new HBox();            						//create a new Hbox
+        hbox.setPadding(new Insets(0, 0, 0, 300));				//set the padding
+        Button playerBet = buttomBettingButtonsGen("Player 1");	//create the betting buttons by calling a generic function
+        Button bankerBet = buttomBettingButtonsGen("Player 2");
+        Button tieBet = buttomBettingButtonsGen("Draw");
+        input_bet.setPrefSize(75, 20);                       //set size of the Textfeild
+        hbox.setSpacing(10);                                    //set spacing
+        hbox.getChildren().addAll(playerBet, bankerBet, tieBet, input_bet, bet_confirm_text_box); //add everything in order to the hbox
+        return hbox;											//return HBox
+    }//end of createHboxBottom()
+
+    //buttomBettingButtonsGen is a private function that will create/return a generic Button used for betting
+
+    private Button buttomBettingButtonsGen(String label) {
+        Button betButton = new Button();  //create a new button
+        betButton.setPrefSize(75, 20);    //set size
+        betButton.setOnAction(set_bet);    //set its action
+        betButton.setText(label);         //set its label
+        betButton.setStyle("-fx-font-weight: bold;");
+        return betButton;                 //return the button
+    }//end of buttomBettingButtonsGen()
+
+    //createVboxRight is a private function that will create/return a generic game screen VBox for the right
+
+    private VBox createVboxRight() {
+        Button gameButton1 = new Button();		//create a new button
+        gameButton1.setPrefSize(90, 90);        //set its size
+        gameButton1.setOnAction(deal_button);    //set its action
+        gameButton1.setText("Deal Cards");      //set its text
+        gameButton1.setStyle("-fx-font-weight: bold;" + "-fx-font-size: 14;");
+        VBox vbox = new VBox();                 //create a new VBox
+        vbox.setAlignment(Pos.CENTER);			//center it
+        vbox.getChildren().add(gameButton1);	//add the button
+        vbox.setPadding(new Insets(0,0,0,0));   //make sure padding is 0
+        return vbox;							//return vbox
+    }//end of createVboxRight()
+
+    //createVBoxLeft is a private function that will create/return a generic game screen VBox for the right
+
+    private VBox createVBoxLeft() {
+        playerCurrentTotal = playerCurrentTotal % 10;			//make sure the score gets reset above 10
+        bankerCurrentTotal = bankerCurrentTotal % 10;
+        Text playerCardCountTextBox = new Text("Player 1: " + Integer.toString(playerCurrentTotal));
+        Text bankerCardCountTextBox = new Text("Player 2: " + Integer.toString(bankerCurrentTotal));
+        playerCardCountTextBox.setStyle("-fx-font-size: 22;" + "-fx-fill: WHITE");
+        bankerCardCountTextBox.setStyle("-fx-font-size: 22;" + "-fx-fill: WHITE");
+        VBox vbox = new VBox();									//create a VBox
+        vbox.setAlignment(Pos.TOP_CENTER);						//Align it
+        vbox.setSpacing(120);									//set its spacing
+        vbox.setPadding(new Insets(80, 20, 0, 10));				//set the padding
+        vbox.getChildren().addAll(playerCardCountTextBox,bankerCardCountTextBox); //add the node objects in order
+        return vbox;											//return the VBox
+    }//end of createVBoxLeft()
+
+    //createGridBox is a private function that will create/return a generic game screen GridBox for the center
+
+    private GridPane createGridBox() {
+        GridPane GridBox = new GridPane();            //create a gridBox
+        GridBox.setPadding(new Insets(0, 0, 0, 180)); //set its padding
+        return GridBox;								  //return gridBox
+    }//end of createGridBox()
 }
