@@ -1,32 +1,83 @@
-package com.example.fx;
+package com.example.card;
 
-import com.example.fx.Card.Rank;
-import com.example.fx.Card.Suit;
+import java.util.ArrayList;
+import java.util.Collections;
 
 public class Deck {
+    //Array list for the deck of cards
+    ArrayList<Cards> the_deck;
+    //Array of suit names and card ranks.
+    private Integer[] card_rank = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
+    private String[] card_suit = {"clubs", "diamonds", "hearts", "spades"};
 
-        private Card[] cards = new Card[26];
+    //Deck counter to count the cards that has been dealt.
+    private static Integer deck_counter;
 
-        public Deck(){
-            refill();
-        }
+    //constructor for the deck to deal cards
+    Deck(){
+        the_deck = new ArrayList<Cards>(52);
+        generate_deck();
+        shuffle_deck();
+        deck_counter = 52;
+    }
 
-        public final void refill(){
-            int i=0;
-            for(Suit suit : Card.Suit.values()){
-                for (Rank rank : Card.Rank.values()){
-                    cards[i++] = new Card(suit,rank);
-                }
+    //deck of 52 generator method
+    public void generate_deck(){
+        //clear deck
+        the_deck.clear();
+        //Cards' reference
+        Cards new_card;
+        //creating 13 cards per suit (4 suits) and add them to array list.
+        for (int index = 0; index < card_suit.length; index++){
+            for(int i = 0; i < card_rank.length; i++){
+                new_card = new Cards(card_suit[index], card_rank[i]);
+                the_deck.add(new_card);
             }
         }
-
-        public Card drawCard(){
-            Card card=null;
-            while (card==null){
-                int index= (int)(Math.random()* cards.length);
-                card= cards[index];
-                cards[index]=null;
-            }
-            return card;
+    }
+    //shuffling the deck method
+    public void shuffle_deck(){
+        //Java function to shuffle the deck
+        Collections.shuffle(the_deck);
+        //setting every card as available to be dealt
+        for (int index = 0; index < the_deck.size(); index++){
+            the_deck.get(index).set_card_dealt(false);
         }
+        //reset counter
+        deck_counter = 52;
+    }
+
+    //returing current size of deck: method
+    public int deck_size(){
+        return deck_counter;
+    }
+
+    //Returning a single card: method
+    public Cards draw_one_card(){
+        //checking if there are enough cards in the deck
+        if (deck_counter < 1){
+            shuffle_deck();
+        }
+        //getting the top card in the deck
+        int top_card = (52 - deck_counter);
+        //remember that the card was drawn
+        Cards drawn_card = the_deck.get(top_card);
+        //setting the card as dealt
+        drawn_card.set_card_dealt(true);
+        //decrement the counter
+        deck_counter--;
+
+        return drawn_card;
+    }
+    //Might be logical error because of dealt and deal CHECK LATER
+    public ArrayList<Cards> deal_hand(){
+        //Initializing Array list for a hand of cards.
+        ArrayList<Cards> dealt_hand = new ArrayList<Cards>(2);
+        //deal two cards and add to array list of cards.
+        dealt_hand.add(draw_one_card());
+        dealt_hand.add(draw_one_card());
+
+        return dealt_hand;
+    }
 }
+
