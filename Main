@@ -40,11 +40,11 @@ public class Main extends Application {
     private static DecimalFormat format = new DecimalFormat("#.##");
 
     int playerCurrentTotal = 0;
-    int bankerCurrentTotal = 0;
+   int player2CurrentTotal = 0;
 
     public static ArrayList<Cards> playerHand;
-    public static ArrayList<Cards> bankerHand;
-    public static Deck theDealer;
+    public static ArrayList<Cards> player2Hand;
+    public static Deck player2;
     static double currentBet;
     static double totalWinnings;
     static String betOn___;
@@ -52,21 +52,21 @@ public class Main extends Application {
 
     public static void initialize(){
 
-        currentBet = 0;
-        totalWinnings = 0;
+       // currentBet = 0;
+       // totalWinnings = 0;
         playerHand = new ArrayList<Cards>(3);
-        bankerHand = new ArrayList<Cards>(3);
-        theDealer = new Deck();
+        player2Hand = new ArrayList<Cards>(3);
+        player2 = new Deck();
         betOn___ = "";
     }
 
     //Method to handle whether a 3rd card should be dealt to the player and banker.
-    static void thirdCardHandler(ArrayList<Cards> playerHand1, ArrayList<Cards> bankerHand1){
+    static void thirdCardHandler(ArrayList<Cards> playerHand1, ArrayList<Cards> player2Hand1){
         //Set third card to null for both banker and player.
         Cards playerThirdCard = null;
-        Cards bankerThirdCard = null;
+        Cards player2ThirdCard = null;
         //First check if there is a natural winning/drawing hand.
-        String nat = Logic.hand_is_natural(playerHand, bankerHand);
+        String nat = Logic.hand_is_natural(playerHand, player2Hand);
         //If there is a natural, then exit function.
         if(nat == "Player 1" || nat == "Player 2")
         {
@@ -74,20 +74,20 @@ public class Main extends Application {
         }
         //Otherwise check if the player needs a third card.
         if(Logic.player_1_draws(playerHand)){
-            playerThirdCard = theDealer.draw_one_card();
+            playerThirdCard = player2.draw_one_card();
             playerHand.add(playerThirdCard); //add third card if needed
         }
         //Check if the banker needs a third card which is dependent on the player's third card
-        if(Logic.player_2_draws(bankerHand1, playerThirdCard)){
-            bankerThirdCard = theDealer.draw_one_card();
-            bankerHand.add(bankerThirdCard); //Add a third card to the banker's hand.
+        if(Logic.player_2_draws(player2Hand1, playerThirdCard)){
+            player2ThirdCard = player2.draw_one_card();
+            player2Hand.add(player2ThirdCard); //Add a third card to the banker's hand.
         }
     }
 
     //Method to evaulate the betting outputs for the player.
     public double evaluateWinnings(){
         //Determine which hand is the winning hand.
-        String winner = Logic.winner(playerHand, bankerHand);
+        String winner = Logic.winner(playerHand, player2Hand);
         //Check if the player's better is the winning bet
         if(betOn___ == winner){
             //If the player won betting on the player's hand, then return the winnings.
@@ -152,7 +152,7 @@ public class Main extends Application {
                 new KeyFrame(Duration.seconds(1), new EventHandler<ActionEvent>() {
                     @Override
                     public void handle(ActionEvent event) {
-                        result.setText(Logic.winner(playerHand, bankerHand) + " Has Won this Hand");
+                        result.setText(Logic.winner(playerHand, player2Hand) + " Has Won this Hand");
                         bet_confirm_text_box.setText("You Had Your Bet On " + b.getText());
                         betOn___ = "";
                         primaryStage.setScene(sceneMap.get("endRound"));
@@ -201,14 +201,14 @@ public class Main extends Application {
                     public void handle(ActionEvent t) {
                         primaryStage.setScene(sceneMap.get("bankerCard2"));
                         if(2 < playerHand.size() ) {                              //if the player has a third card
-                            if(2 < bankerHand.size()) {                           //also the banker
+                            if(2 < player2Hand.size()) {                           //also the banker
                                 players_one_two.play();
                             }
                             else{                                                 //banker does not
                                 player.play();
                             }
                         }
-                        else if(2 < bankerHand.size() ) {                         //only the banker has a third card
+                        else if(2 < player2Hand.size() ) {                         //only the banker has a third card
                             banker.play();
                         }
                         else{
@@ -235,10 +235,10 @@ public class Main extends Application {
                     return;
                 }
                 playerCurrentTotal = 0;                                           //reset the totals
-                bankerCurrentTotal = 0;
-                playerHand = theDealer.deal_hand();                                //get the new hands
-                bankerHand = theDealer.deal_hand();
-                thirdCardHandler(playerHand, bankerHand);                         //check/deal if a third card is needed for either
+                player2CurrentTotal = 0;
+                playerHand = player2.deal_hand();                                //get the new hands
+                player2Hand = player2.deal_hand();
+                thirdCardHandler(playerHand, player2Hand);                         //check/deal if a third card is needed for either
                 sceneMapSetup();                                                  //setup the scenes
                 cards_dealt.play();                                                //Play the timeline to display the cards
                 evaluateWinnings();                                               //check/give who won
@@ -278,7 +278,7 @@ public class Main extends Application {
                 betOn___ = "";
                 bet_confirm_text_box.setText("");
                 playerCurrentTotal = 0;
-                bankerCurrentTotal = 0;
+                player2CurrentTotal = 0;
                 input_bet.clear();
                 sceneMap.put("gameScene", createCardScene(0,false,false));//set stock game screen
                 primaryStage.setScene(sceneMap.get("gameScene"));         //go to stock game screen
@@ -330,18 +330,18 @@ public class Main extends Application {
         sceneMap.put("gameScene", createCardScene(0,false,false));                     //player card 1
         playerCurrentTotal = playerHand.get(0).get_card_value() + playerCurrentTotal;
         sceneMap.put("playerCard1", createCardScene(1,false,false));				   //banker card 1
-        bankerCurrentTotal = bankerHand.get(0).get_card_value() + bankerCurrentTotal;
+        player2CurrentTotal = player2Hand.get(0).get_card_value() + player2CurrentTotal;
         sceneMap.put("bankerCard1", createCardScene(2,false,false));			       //player card 2
         playerCurrentTotal = playerHand.get(1).get_card_value() + playerCurrentTotal;
         sceneMap.put("playerCard2", createCardScene(3,false,false));				   //banker card 2
-        bankerCurrentTotal = bankerHand.get(1).get_card_value() + bankerCurrentTotal;
+        player2CurrentTotal = player2Hand.get(1).get_card_value() + player2CurrentTotal;
         sceneMap.put("bankerCard2", createCardScene(4,false,false));
         if(2 < playerHand.size() ) {
             playerCurrentTotal = playerHand.get(2).get_card_value() + playerCurrentTotal;
             sceneMap.put("playerCard3", createCardScene(4,true,false));                 //player card 3
         }
-        if(2 < bankerHand.size()) {
-            bankerCurrentTotal = bankerHand.get(2).get_card_value() + bankerCurrentTotal;
+        if(2 < player2Hand.size()) {
+            player2CurrentTotal = player2Hand.get(2).get_card_value() + player2CurrentTotal;
             sceneMap.put("bankerCard3", createCardScene(4,true,true));                  //banker card 3
         }
     }//end of sceneMapSetup()
@@ -368,7 +368,7 @@ public class Main extends Application {
             GridBox.add(PlayerCard1, 0, 0, 1, 1);
         }
         if(four > 1) {
-            ImageView BankerCard1 =  imageSet(bankerHand.get(0).get_image_file_name()); //create banker card 1 picture and set it to the grid
+            ImageView BankerCard1 =  imageSet(player2Hand.get(0).get_image_file_name()); //create banker card 1 picture and set it to the grid
             GridBox.add(BankerCard1, 0, 1, 1, 1);
         }
         if(four > 2) {
@@ -376,15 +376,15 @@ public class Main extends Application {
             GridBox.add(PlayerCard2, 1, 0, 1, 1);
         }
         if(four > 3) {
-            ImageView BankerCard2 =  imageSet(bankerHand.get(1).get_image_file_name()); //create banker card 2 picture and set it to the grid
+            ImageView BankerCard2 =  imageSet(player2Hand.get(1).get_image_file_name()); //create banker card 2 picture and set it to the grid
             GridBox.add(BankerCard2, 1, 1, 1, 1);
         }
         if(playerThird == true && 2 < playerHand.size()) {
             ImageView PlayerCard3 =  imageSet(playerHand.get(2).get_image_file_name()); //create player card 3 picture and set it to the grid
             GridBox.add(PlayerCard3, 2, 0, 1, 1);
         }
-        if(bankerThird == true && 2 < bankerHand.size()) {
-            ImageView BankerCard3 =  imageSet(bankerHand.get(2).get_image_file_name()); //create banker card 3 picture and set it to the grid
+        if(bankerThird == true && 2 < player2Hand.size()) {
+            ImageView BankerCard3 =  imageSet(player2Hand.get(2).get_image_file_name()); //create banker card 3 picture and set it to the grid
             GridBox.add(BankerCard3, 2, 1, 1, 1);
         }
         GridBox.add(result,0,2,30,10);                                               //set result text
@@ -510,9 +510,9 @@ public class Main extends Application {
 
     private VBox createVBoxLeft() {
         playerCurrentTotal = playerCurrentTotal % 10;			//make sure the score gets reset above 10
-        bankerCurrentTotal = bankerCurrentTotal % 10;
+        player2CurrentTotal = player2CurrentTotal % 10;
         Text playerCardCountTextBox = new Text("Player 1: " + Integer.toString(playerCurrentTotal));
-        Text bankerCardCountTextBox = new Text("Player 2: " + Integer.toString(bankerCurrentTotal));
+        Text bankerCardCountTextBox = new Text("Player 2: " + Integer.toString(player2CurrentTotal));
         playerCardCountTextBox.setStyle("-fx-font-size: 22;" + "-fx-fill: WHITE");
         bankerCardCountTextBox.setStyle("-fx-font-size: 22;" + "-fx-fill: WHITE");
         VBox vbox = new VBox();									//create a VBox
