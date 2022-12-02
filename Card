@@ -17,7 +17,7 @@ public class Cards {
         //Since the card has not been dealt at the start of the game. set to "dealt" to false
         card_dealt = false;
         //variable to link rank(or value) and suit
-        String face_value = "";
+        String face_value;
         //if statements to assign values to corresponding cards (i.e. "ace" = 1)
         if (card_value == 1){
             face_value = "ace";
@@ -41,18 +41,11 @@ public class Cards {
         image_file_name = face_value + "_of_" + card_suit + ".png";
     }
 
-    //Return card's suit method
-    public String get_card_suit(){
-        return card_suit;
-    }
     //Return card's value method
     public int get_card_value(){
         return card_value;
     }
-    //2 methods: one to set card_dealt one to get card_dealt
-    public Boolean get_card_dealt(){ //if the card has been dealt
-        return card_dealt;
-    }
+
     public void set_card_dealt(Boolean is_Dealt){
         card_dealt = is_Dealt;
     }
